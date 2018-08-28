@@ -1,4 +1,6 @@
-/* comment */
+/* Comment
+  /* nested comment */
+*/
 
 int main()
 {
