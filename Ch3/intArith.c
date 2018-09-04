@@ -23,6 +23,16 @@
   <power> -> ^
   <exponent> -> ( <exp> ) | Number
 
+  EBNF WITH UNARY MINUS:
+  <exp> -> <term> { <addop> <term> }
+  <addop> -> + | -
+  <term> -> <factor> { <mulop> <factor> }
+  <mulop> -> * | / | %
+  <factor> -> <exponent> { <power> <factor> }
+  <power> -> ^
+  <exponent> -> [ <minus> ] <final>
+  <final> -> ( <exp> ) | Number
+
   Inputs a line of text from stdin
   Outputs "Error" or the result
 */
@@ -121,6 +131,19 @@ int factor(void)
 int exponent(void)
 {
   int temp;
+  if(token == '-')
+  {
+    match('-');
+    temp = 0 - final();
+  }
+  else temp = final();
+
+  return temp;
+}
+
+int final(void)
+{
+  int temp;
   if (token == '(')
   {
     match('(');
@@ -136,4 +159,5 @@ int exponent(void)
   else error();
   return temp;
 }
+
 
