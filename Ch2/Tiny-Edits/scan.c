@@ -8,6 +8,8 @@
 #include "globals.h"
 #include "util.h"
 #include "scan.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 /* states in scanner DFA */
 typedef enum
@@ -15,13 +17,14 @@ typedef enum
    StateType;
 
 /* lexeme of identifier or reserved word */
-char tokenString[MAXTOKENLEN+1];
+char* tokenString;
+int curTokenSize = 10;
 
 /* BUFLEN = length of the input buffer for
    source code lines */
 #define BUFLEN 256
 
-static char lineBuf[BUFLEN]; /* holds the current line */
+static char lineBuf[256]; /* holds the current line */
 static int linepos = 0; /* current position in LineBuf */
 static int bufsize = 0; /* current size of buffer string */
 static int EOF_flag = FALSE; /* corrects ungetNextChar behavior on EOF */
@@ -92,10 +95,12 @@ static TokenType reservedLookup (char * s)
 TokenType getToken(void)
 {  /* index for storing into tokenString */
    int tokenStringIndex = 0;
+   tokenString = calloc(curTokenSize, sizeof(char));
    /* holds current token to be returned */
    TokenType currentToken;
    /* current state - always begins at START */
    StateType state = START;
+   int commentLevel = 0;
    /* flag to indicate save to tokenString */
    int save;
    while (state != DONE)
@@ -116,6 +121,7 @@ TokenType getToken(void)
          { 
            save = FALSE;
            state = INCOMMENT;
+           commentLevel++;
          }
          else
          { state = DONE;
@@ -163,7 +169,16 @@ TokenType getToken(void)
          { state = DONE;
            currentToken = ENDFILE;
          }
-         else if (c == '}') state = START;
+         else if (c == '{')
+         {
+           commentLevel++;
+         }
+         else if (c == '}')
+         {
+           commentLevel--;
+           if(commentLevel == 0)
+             state = START;
+         }
          break;
        case INASSIGN:
          state = DONE;
@@ -201,7 +216,12 @@ TokenType getToken(void)
          currentToken = ERROR;
          break;
      }
-     if ((save) && (tokenStringIndex <= MAXTOKENLEN))
+     if(tokenStringIndex == curTokenSize)
+     {
+       curTokenSize *= 2;
+       tokenString = (char *) realloc(tokenString, curTokenSize);
+     }
+     if (save)
        tokenString[tokenStringIndex++] = (char) c;
      if (state == DONE)
      { tokenString[tokenStringIndex] = '\0';
