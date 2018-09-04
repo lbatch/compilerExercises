@@ -7,6 +7,13 @@
   <mulop> -> *
   <factor> -> ( <exp> ) | Number
 
+  EBNF WITH DIVISION AND MODULO:
+  <exp> -> <term> { <addop> <term> }
+  <addop> -> + | -
+  <term> <factor> { <mulop> <factor> }
+  <mulop> -> * | / | %
+  <factor> -> ( <exp> ) | Number
+
   Inputs a line of text from stdin
   Outputs "Error" or the result
 */
@@ -67,10 +74,19 @@ int exp(void)
 int term(void)
 {
   int temp = factor();
-  while(token == '*')
+  while((token == '*') || (token=='/') || (token=='%'))
   {
-    match('*');
-    temp *= factor();
+    switch(token) {
+      case '*': match('*');
+                temp *= factor();
+                break;
+      case '/': match('/');
+                temp /= factor();
+                break;
+      case '%': match('%');
+                temp %= factor();
+                break;
+    }
   }
   return temp;
 }
