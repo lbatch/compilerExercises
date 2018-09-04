@@ -10,9 +10,18 @@
   EBNF WITH DIVISION AND MODULO:
   <exp> -> <term> { <addop> <term> }
   <addop> -> + | -
-  <term> <factor> { <mulop> <factor> }
+  <term> -> <factor> { <mulop> <factor> }
   <mulop> -> * | / | %
   <factor> -> ( <exp> ) | Number
+
+  EBNF WITH EXPONENTIATION:
+  <exp> -> <term> { <addop> <term>}
+  <addop> -> + | -
+  <term> -> <factor> { <mulop> <factor> }
+  <mulop> -> * | / | %
+  <factor> -> <exponent> { <power> <factor> }
+  <power> -> ^
+  <exponent> -> ( <exp> ) | Number
 
   Inputs a line of text from stdin
   Outputs "Error" or the result
@@ -92,6 +101,24 @@ int term(void)
 }
 
 int factor(void)
+{
+  int temp = exponent();
+  int base;
+  int pow;
+  while(token == '^')
+  {
+    match('^');
+    base = temp;
+    pow = exponent();
+    for(int i = 1; i < pow; i++)
+    {
+      temp *= base;
+    }
+  }
+  return temp;
+}
+
+int exponent(void)
 {
   int temp;
   if (token == '(')
