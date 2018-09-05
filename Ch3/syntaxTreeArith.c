@@ -32,7 +32,7 @@ typedef STreeNode *SyntaxTree;
 SyntaxTree expression(void);
 SyntaxTree term(void);
 SyntaxTree factor(void);
-int getResult(void);
+int getResult(SyntaxTree);
 SyntaxTree constructTree(void);
 
 void error(void)
@@ -53,7 +53,10 @@ int main()
 {
   int result;
   
-  result = getResult();
+  SyntaxTree resultTree;
+  resultTree = constructTree(); 
+ 
+  result = getResult(resultTree);
   if(token == '\n') /* check for end of line */
     printf("Result = %d\n", result);
   else
@@ -62,12 +65,22 @@ int main()
   return 0;
 }
 
-int getResult()
+int getResult(SyntaxTree rt)
 {
-  SyntaxTree resultTree;
-  resultTree = constructTree();
+  if(rt->kind == ConstK)
+    return rt->val;
 
-  return 0;
+  else if(rt->kind == OpK)
+  {
+    switch(rt->op) {
+      case Plus: return getResult(rt->lchild) + getResult(rt->rchild);
+                 break;
+      case Minus: return getResult(rt->lchild) - getResult(rt->rchild);
+                  break;
+      case Times: return getResult(rt->lchild) * getResult(rt->rchild);
+                  break;
+    }
+  }
 }
 
 SyntaxTree constructTree()
@@ -120,6 +133,7 @@ SyntaxTree term(void)
     currNode->kind = OpK;
     currNode->op = Times;
     match('*');
+    currNode->lchild = tempNode;
     currNode->rchild = factor();
     tempNode = currNode;
   }
