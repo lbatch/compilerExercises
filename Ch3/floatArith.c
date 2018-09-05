@@ -1,29 +1,6 @@
 /* Simple integer arithmetic calculator according to the EBNF:
 
-  ORIGINAL EBNF:
-  <exp> -> <term> { <addop> <term> }
-  <addop> -> + | -
-  <term> -> <factor> { <mulop> <factor> }
-  <mulop> -> *
-  <factor> -> ( <exp> ) | Number
-
-  EBNF WITH DIVISION AND MODULO:
-  <exp> -> <term> { <addop> <term> }
-  <addop> -> + | -
-  <term> -> <factor> { <mulop> <factor> }
-  <mulop> -> * | / | %
-  <factor> -> ( <exp> ) | Number
-
-  EBNF WITH EXPONENTIATION:
-  <exp> -> <term> { <addop> <term>}
-  <addop> -> + | -
-  <term> -> <factor> { <mulop> <factor> }
-  <mulop> -> * | / | %
-  <factor> -> <exponent> { <power> <factor> }
-  <power> -> ^
-  <exponent> -> ( <exp> ) | Number
-
-  EBNF WITH UNARY MINUS:
+  EBNF FOR INT:
   <exp> -> <term> { <addop> <term> }
   <addop> -> + | -
   <term> -> <factor> { <mulop> <factor> }
@@ -33,6 +10,17 @@
   <exponent> -> [ <minus> ] <final>
   <final> -> ( <exp> ) | Number
 
+  EBNF FOR FLOAT:
+  <expression> -> <term> { <addop> <term> }
+  <addop> -> + | -
+  <term> -> <factor> { <mulop> <factor> }
+  <mulop> -> * | / 
+  <factor> -> <exponent> { <power> <factor> }
+  <power> -> ^
+  <exponent> -> [ <minus> ] <final>
+  <final> -> ( <expression> ) | <number>
+  <number> -> <digit>{<digit>}.<digit>{<digit>}
+
   Inputs a line of text from stdin
   Outputs "Error" or the result
 */
@@ -40,15 +28,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <ctype.h>
 
 char token; /* global token variable */
 
 /* function prototypes for recurisve calls */
-int expression(void);
-int term(void);
-int factor(void);
-int exponent(void);
-int final(void);
+float expression(void);
+float term(void);
+float factor(void);
+float exponent(void);
+float final(void);
+float number(void);
 
 void error(void)
 {
@@ -65,19 +56,19 @@ void match(char expectedToken)
 
 main()
 {
-  int result;
+  float result;
   token = getchar(); /* load token with first character for lookahead */
 
-  result = exp();
+  result = expression();
   if (token == '\n') /* check for end of line */
-    printf("Result = %d\n",result);
+    printf("Result = %f\n",result);
   else error();
   return 0;
 }
 
-int exp(void)
+float expression(void)
 {
-  int temp = term();
+  float temp = term();
   while ((token == '+') || (token=='-'))
   {
     switch(token) {
@@ -92,9 +83,12 @@ int exp(void)
   return temp;
 }
 
-int term(void)
+float term(void)
 {
-  int temp = factor();
+  float temp = factor();
+  float mod;
+  int tempInt;
+  int modInt;
   while((token == '*') || (token=='/') || (token=='%'))
   {
     switch(token) {
@@ -104,35 +98,26 @@ int term(void)
       case '/': match('/');
                 temp /= factor();
                 break;
-      case '%': match('%');
-                temp %= factor();
-                break;
     }
   }
   return temp;
 }
 
-int factor(void)
+float factor(void)
 {
-  int temp = exponent();
-  int base;
-  int pow;
+  float temp = exponent();
   while(token == '^')
   {
     match('^');
-    base = temp;
-    pow = exponent();
-    for(int i = 1; i < pow; i++)
-    {
-      temp *= base;
-    }
+    
+    temp = (float) pow((double) temp,(double) factor());
   }
   return temp;
 }
 
-int exponent(void)
+float exponent(void)
 {
-  int temp;
+  float temp;
   if(token == '-')
   {
     match('-');
@@ -143,23 +128,50 @@ int exponent(void)
   return temp;
 }
 
-int final(void)
+float final(void)
 {
-  int temp;
+  int digit;
+  float decPlace = 0.1;
+  float temp = 0;
   if (token == '(')
   {
     match('(');
-    temp = exp();
+    temp = expression();
     match(')');
   }
-  else if (isdigit(token))
+  else if(isdigit(token))
   {
-    ungetc(token,stdin);
-    scanf("%d",&temp);
-    token = getchar();
+    temp = number();
   }
   else error();
   return temp;
 }
 
+float number(void)
+{
+  int digit;
+  float decPlace = 0.1;
+  float temp = 0;
 
+  while(isdigit(token))
+  {
+    ungetc(token,stdin);
+    temp *= 10;
+    scanf("%1d", &digit);
+    temp += digit;
+    token = getchar();
+  }
+  if(token == '.')
+  {
+    match('.');
+    while(isdigit(token))
+    {
+      ungetc(token,stdin);
+      scanf("%1d",&digit);
+      temp += ((float)digit * decPlace);
+      decPlace /= 10;
+      token = getchar();
+    }
+  }
+  return temp;
+}
