@@ -20,7 +20,7 @@ static TreeNode * repeat_stmt(void);
 static TreeNode * assign_stmt(void);
 static TreeNode * read_stmt(void);
 static TreeNode * write_stmt(void);
-static TreeNode * exp(void);
+static TreeNode * compare_exp(void);
 static TreeNode * simple_exp(void);
 static TreeNode * term(void);
 static TreeNode * factor(void);
@@ -78,7 +78,7 @@ TreeNode * statement(void)
 TreeNode * if_stmt(void)
 { TreeNode * t = newStmtNode(IfK);
   match(IF);
-  if (t!=NULL) t->child[0] = exp();
+  if (t!=NULL) t->child[0] = compare_exp();
   match(THEN);
   if (t!=NULL) t->child[1] = stmt_sequence();
   if (token==ELSE) {
@@ -94,7 +94,7 @@ TreeNode * repeat_stmt(void)
   match(REPEAT);
   if (t!=NULL) t->child[0] = stmt_sequence();
   match(UNTIL);
-  if (t!=NULL) t->child[1] = exp();
+  if (t!=NULL) t->child[1] = compare_exp();
   return t;
 }
 
@@ -104,7 +104,7 @@ TreeNode * assign_stmt(void)
     t->attr.name = copyString(tokenString);
   match(ID);
   match(ASSIGN);
-  if (t!=NULL) t->child[0] = exp();
+  if (t!=NULL) t->child[0] = simple_exp();
   return t;
 }
 
@@ -120,23 +120,21 @@ TreeNode * read_stmt(void)
 TreeNode * write_stmt(void)
 { TreeNode * t = newStmtNode(WriteK);
   match(WRITE);
-  if (t!=NULL) t->child[0] = exp();
+  if (t!=NULL) t->child[0] = simple_exp();
   return t;
 }
 
-TreeNode * exp(void)
+TreeNode * compare_exp(void)
 { TreeNode * t = simple_exp();
-  if ((token==LT)||(token==LE)||(token==EQ)||(token==GT)||(token==GE)||(token==NE)) {
-    TreeNode * p = newExpNode(OpK);
-    if (p!=NULL) {
-      p->child[0] = t;
-      p->attr.op = token;
-      t = p;
-    }
-    match(token);
-    if (t!=NULL)
-      t->child[1] = simple_exp();
+  TreeNode * p = newExpNode(OpK);
+  if(p != NULL) {
+    p->child[0] = t;
+    p->attr.op = token;
+    t = p;
   }
+  match(token);
+  if(t!=NULL)
+    t->child[1] = simple_exp();
   return t;
 }
 
@@ -187,7 +185,7 @@ TreeNode * factor(void)
       break;
     case LPAREN :
       match(LPAREN);
-      t = exp();
+      t = simple_exp();
       match(RPAREN);
       break;
     default:
