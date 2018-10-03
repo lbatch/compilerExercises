@@ -59,9 +59,9 @@ static struct
     { char* str;
       TokenType tok;
     } reservedWords[MAXRESERVED]
-   = {{"else",ELSE},{"end",END},{"if",IF},
-      {"read",READ},{"repeat",REPEAT},{"then", THEN},{"until",UNTIL},
-      {"write",WRITE},{"and",AND},{"or",OR},{"not",NOT}};
+   = {{"and",AND},{"else",ELSE},{"end",END},{"if",IF},{"not",NOT},
+      {"or",OR},{"read",READ},{"repeat",REPEAT},{"then",THEN},
+      {"until",UNTIL},{"write",WRITE}};
 
 /* lookup an identifier to see if it is a reserved word */
 /* uses linear search */
@@ -75,7 +75,9 @@ static TokenType reservedLookup (char * s)
     int m = l + (r-l)/2;
    
     if(!strcmp(reservedWords[m].str,s))
+    {
       return reservedWords[m].tok;
+    }
 
     if(strcmp(reservedWords[m].str,s) < 0)
       l = m + 1;

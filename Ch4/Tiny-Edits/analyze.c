@@ -107,10 +107,11 @@ static void checkNode(TreeNode * t)
   { case ExpK:
       switch (t->kind.exp)
       { case OpK:
-          if ((t->child[0]->type != Integer) ||
-              (t->child[1]->type != Integer))
+          if (((t->child[0]->type != Integer) ||
+              (t->child[1]->type != Integer)) && !((t->attr.op == OR) || (t->attr.op == AND) || (t->attr.op == NOT))) 
             typeError(t,"Op applied to non-integer");
-          if ((t->attr.op == EQ) || (t->attr.op == LT) || (t->attr.op == LE) || (t->attr.op == GT) || (t->attr.op == GE) || (t->attr.op == NE))
+          if ((t->attr.op == EQ) || (t->attr.op == LT) || (t->attr.op == LE) || (t->attr.op == GT) || (t->attr.op == GE) || (t->attr.op == NE) || 
+		(t->attr.op == NOT) || (t->attr.op == OR) || (t->attr.op == AND))
             t->type = Boolean;
           else
             t->type = Integer;
