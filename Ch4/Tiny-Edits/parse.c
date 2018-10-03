@@ -21,6 +21,9 @@ static TreeNode * assign_stmt(void);
 static TreeNode * read_stmt(void);
 static TreeNode * write_stmt(void);
 static TreeNode * compare_exp(void);
+static TreeNode * bool_term(void);
+static TreeNode * bool_factor(void);
+static TreeNode * bool_val(void);
 static TreeNode * simple_exp(void);
 static TreeNode * term(void);
 static TreeNode * factor(void);
@@ -125,18 +128,79 @@ TreeNode * write_stmt(void)
 }
 
 TreeNode * compare_exp(void)
-{ TreeNode * t = simple_exp();
-  TreeNode * p = newExpNode(OpK);
-  if(p != NULL) {
-    p->child[0] = t;
-    p->attr.op = token;
-    t = p;
+{ TreeNode * t = bool_term();
+  while(token == OR)
+  {
+    TreeNode * p = newExpNode(OpK);
+    if(p != NULL) {
+      p->child[0] = t;
+      p->attr.op = token;
+      t = p;
+      match(token);
+      t->child[1] = bool_term();
+    }
   }
-  match(token);
-  if(t!=NULL)
-    t->child[1] = simple_exp();
   return t;
 }
+
+TreeNode * bool_term(void)
+{
+  TreeNode * t = bool_factor();
+  while(token == AND)
+  {
+    TreeNode * p = newExpNode(OpK);
+    if(p != NULL) {
+      p->child[0] = t;
+      p->attr.op = token;
+      t = p;
+      match(token);
+      t->child[1] = bool_factor();
+    }
+  }
+  return t;
+}
+
+TreeNode * bool_factor(void)
+{
+  TreeNode * p = newExpNode(OpK);
+  if(token == NOT)
+  {
+    p->attr.op = token;
+    match(token);
+    p->child[0] = bool_val();
+  }
+  else
+  {
+    p = bool_val();
+  }
+  return p;
+}
+
+TreeNode * bool_val(void)
+{ TreeNode * t = NULL;
+  switch (token) {
+    case LPAREN :
+      match(LPAREN);
+      t = compare_exp();
+      match(RPAREN);
+      break;
+    default:
+      t = simple_exp();
+      TreeNode *p = newExpNode(OpK);
+      if(p != NULL) {
+        p->child[0] = t;
+        p->attr.op = token;
+        t = p;
+      }
+      match(token);
+      if(t != NULL)
+        t->child[1] = simple_exp();
+      break;
+    }
+  return t;
+}
+
+
 
 TreeNode * simple_exp(void)
 { TreeNode * t = term();
