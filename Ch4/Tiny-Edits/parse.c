@@ -34,12 +34,14 @@ static void syntaxError(char * message)
   Error = TRUE;
 }
 
-static void match(TokenType expected)
+static void match(TokenType expected, char * message)
 { if (token == expected) token = getToken();
   else {
-    syntaxError("unexpected token -> ");
+    fprintf(listing, "Expected token: ");
+    printToken(expected,"");
+    fprintf(listing, "Received token: ");
     printToken(token,tokenString);
-    fprintf(listing,"      ");
+    syntaxError(message);
   }
 }
 
@@ -49,7 +51,7 @@ TreeNode * stmt_sequence(void)
   while ((token!=ENDFILE) && (token!=END) &&
          (token!=ELSE) && (token!=UNTIL))
   { TreeNode * q;
-    match(SEMI);
+    match(SEMI, "Missing semicolon");
     q = statement();
     if (q!=NULL) {
       if (t==NULL) t = p = q;
@@ -70,7 +72,7 @@ TreeNode * statement(void)
     case ID : t = assign_stmt(); break;
     case READ : t = read_stmt(); break;
     case WRITE : t = write_stmt(); break;
-    default : syntaxError("unexpected token -> ");
+    default : syntaxError("Unexpected token -> ");
               printToken(token,tokenString);
               token = getToken();
               break;
@@ -80,23 +82,23 @@ TreeNode * statement(void)
 
 TreeNode * if_stmt(void)
 { TreeNode * t = newStmtNode(IfK);
-  match(IF);
+  match(IF, "Invalid if clause"); /* Should not happen unless if_stmt incorrectly called */
   if (t!=NULL) t->child[0] = compare_exp();
-  match(THEN);
+  match(THEN, "Missing 'then' statements in 'if' structure");
   if (t!=NULL) t->child[1] = stmt_sequence();
   if (token==ELSE) {
-    match(ELSE);
+    match(ELSE, "Missing 'else'"); /* Should not happen because of prior test */
     if (t!=NULL) t->child[2] = stmt_sequence();
   }
-  match(END);
+  match(END, "Missing end of if statement");
   return t;
 }
 
 TreeNode * repeat_stmt(void)
 { TreeNode * t = newStmtNode(RepeatK);
-  match(REPEAT);
+  match(REPEAT, "Invalid repeat clause"); /* should not happen unless repeat_stmt incorrectly called */
   if (t!=NULL) t->child[0] = stmt_sequence();
-  match(UNTIL);
+  match(UNTIL, "Until loop missing terminating condition"); 
   if (t!=NULL) t->child[1] = compare_exp();
   return t;
 }
@@ -105,24 +107,24 @@ TreeNode * assign_stmt(void)
 { TreeNode * t = newStmtNode(AssignK);
   if ((t!=NULL) && (token==ID))
     t->attr.name = copyString(tokenString);
-  match(ID);
-  match(ASSIGN);
+  match(ID, "Assign statement must begin with identifier");
+  match(ASSIGN, "Missing assign token");
   if (t!=NULL) t->child[0] = simple_exp();
   return t;
 }
 
 TreeNode * read_stmt(void)
 { TreeNode * t = newStmtNode(ReadK);
-  match(READ);
+  match(READ, "Invalid read clause"); /* should not happen unless read_stmt incorrectly called */
   if ((t!=NULL) && (token==ID))
     t->attr.name = copyString(tokenString);
-  match(ID);
+  match(ID, "Read requires a destination identifier");
   return t;
 }
 
 TreeNode * write_stmt(void)
 { TreeNode * t = newStmtNode(WriteK);
-  match(WRITE);
+  match(WRITE, "Invalid write clause"); /* should not happen unless write_stmt incorrectly called */
   if (t!=NULL) t->child[0] = simple_exp();
   return t;
 }
@@ -136,7 +138,7 @@ TreeNode * compare_exp(void)
       p->child[0] = t;
       p->attr.op = token;
       t = p;
-      match(token);
+      match(token, ""); /* matching self, should not throw error */
       t->child[1] = bool_term();
     }
   }
@@ -153,7 +155,7 @@ TreeNode * bool_term(void)
       p->child[0] = t;
       p->attr.op = token;
       t = p;
-      match(token);
+      match(token, ""); /* matching self, should not throw error */
       t->child[1] = bool_factor();
     }
   }
@@ -166,7 +168,7 @@ TreeNode * bool_factor(void)
   if(token == NOT)
   {
     p->attr.op = token;
-    match(token);
+    match(token, ""); /* matching self, should not throw error */
     p->child[0] = bool_val();
   }
   else
@@ -180,9 +182,9 @@ TreeNode * bool_val(void)
 { TreeNode * t = NULL;
   switch (token) {
     case LPAREN :
-      match(LPAREN);
+      match(LPAREN, "Invalid parenthetical");
       t = compare_exp();
-      match(RPAREN);
+      match(RPAREN, "Missing closing parenthesis");
       break;
     default:
       t = simple_exp();
@@ -192,7 +194,7 @@ TreeNode * bool_val(void)
         p->attr.op = token;
         t = p;
       }
-      match(token);
+      match(token, ""); /* matching self, should not throw error */
       if(t != NULL)
         t->child[1] = simple_exp();
       break;
@@ -210,7 +212,7 @@ TreeNode * simple_exp(void)
       p->child[0] = t;
       p->attr.op = token;
       t = p;
-      match(token);
+      match(token, ""); /* matching self, should not throw error */
       t->child[1] = term();
     }
   }
@@ -225,7 +227,7 @@ TreeNode * term(void)
       p->child[0] = t;
       p->attr.op = token;
       t = p;
-      match(token);
+      match(token, ""); /* matching self, should not throw error */
       p->child[1] = factor();
     }
   }
@@ -239,18 +241,18 @@ TreeNode * factor(void)
       t = newExpNode(ConstK);
       if ((t!=NULL) && (token==NUM))
         t->attr.val = atoi(tokenString);
-      match(NUM);
+      match(NUM, ""); /* switching on token, should not throw error */
       break;
     case ID :
       t = newExpNode(IdK);
       if ((t!=NULL) && (token==ID))
         t->attr.name = copyString(tokenString);
-      match(ID);
+      match(ID, ""); /* switching on token, should not throw error */
       break;
     case LPAREN :
-      match(LPAREN);
+      match(LPAREN, "invalid parenthetical");
       t = simple_exp();
-      match(RPAREN);
+      match(RPAREN, "missing closing parenthesis");
       break;
     default:
       syntaxError("unexpected token -> ");
