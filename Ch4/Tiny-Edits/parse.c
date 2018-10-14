@@ -37,16 +37,15 @@ static void syntaxError(char * message)
 static void match(TokenType expected, char * message)
 { if (token == expected) token = getToken();
   else {
-    fprintf(listing, "Expected token: ");
-    printToken(expected,"");
-    fprintf(listing, "Received token: ");
+    syntaxError("Unexpected token -> ");
     printToken(token,tokenString);
-    syntaxError(message);
+    fprintf(listing,"       ");
   }
 }
 
-TreeNode * stmt_sequence(void)
-{ TreeNode * t = statement();
+TreeNode * stmt_sequence()
+{ 
+  TreeNode * t = statement();
   TreeNode * p = t;
   while ((token!=ENDFILE) && (token!=END) &&
          (token!=ELSE) && (token!=UNTIL))
